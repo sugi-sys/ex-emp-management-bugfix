@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.example.domain.Employee;
+import com.example.form.SearchEmployeeForm;
 import com.example.form.UpdateEmployeeForm;
 import com.example.service.EmployeeService;
 
@@ -49,8 +50,31 @@ public class EmployeeController {
 	 * @return 従業員一覧画面
 	 */
 	@GetMapping("/showList")
-	public String showList(Model model) {
+	public String showList(Model model, SearchEmployeeForm form) {
 		List<Employee> employeeList = employeeService.showList();
+		model.addAttribute("employeeList", employeeList);
+		return "employee/list";
+	}
+
+	/////////////////////////////////////////////////////
+	// ユースケース：従業員を従業員名で曖昧検索する
+	/////////////////////////////////////////////////////
+	/**
+	 * 従業員一覧画面を出力します.
+	 * 
+	 * @param model モデル
+	 * @return 従業員一覧画面
+	 */
+	@PostMapping("/search")
+	public String search(Model model, SearchEmployeeForm form) {
+		if ("".equals(form.getName())) {
+			return showList(model, form);
+		}
+		List<Employee> employeeList = employeeService.search(form.getName());
+		if (employeeList.size() == 0) {
+			model.addAttribute("nullList", "１件もありませんでした");
+			return showList(model, form);
+		}
 		model.addAttribute("employeeList", employeeList);
 		return "employee/list";
 	}

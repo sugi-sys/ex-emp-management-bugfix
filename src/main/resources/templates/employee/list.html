@@ -99,6 +99,33 @@
           <!-- ここにモックのtable要素を貼り付けます -->
 
           <table class="table table-striped">
+            <div class="well">
+              <form
+              method="post"
+              action="list.html"
+              th:action="@{/employee/search}"
+              th:object="${searchEmployeeForm}"
+              >
+                <div class="form-group">
+                  <input
+                    type="text"
+                    name="name"
+                    id="name"
+                    class="form-control"
+                    placeholder="従業員名"
+                    th:field="*{name}"
+                  />
+                </div>
+                <div class="form-group">
+                  <button type="submit" class="btn btn-primary">
+                    検索
+                  </button>
+                </div>
+              </form>
+            </div>
+            <tr th:if="${nullList}">
+              <div class="well"><span th:text="${nullList}"></span></div>
+            </tr>
             <thead>
               <tr>
                 <th>従業員名</th>
