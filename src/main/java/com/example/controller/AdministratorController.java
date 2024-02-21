@@ -3,6 +3,7 @@ package com.example.controller;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -63,7 +64,7 @@ public class AdministratorController {
 	 * @return 管理者登録画面
 	 */
 	@GetMapping("/toInsert")
-	public String toInsert(InsertAdministratorForm form) {
+	public String toInsert(Model model, InsertAdministratorForm form) {
 		return "administrator/insert";
 	}
 
@@ -74,13 +75,17 @@ public class AdministratorController {
 	 * @return ログイン画面へリダイレクト
 	 */
 	@PostMapping("/insert")
-	public String insert(@Validated InsertAdministratorForm form, BindingResult bindingResult) {
+	public String insert(@Validated InsertAdministratorForm form, BindingResult bindingResult, Model model) {
 		if (bindingResult.hasErrors()) {
-			return toInsert(form);
+			return toInsert(model, form);
 		}
 		Administrator administrator = new Administrator();
 		// フォームからドメインにプロパティ値をコピー
 		BeanUtils.copyProperties(form, administrator);
+		if (administratorService.findByMailAddress(administrator.getMailAddress()) != null) {
+			model.addAttribute("notUniqueMail", "メールアドレスが重複しています");
+			return toInsert(model, form);
+		}
 		administratorService.insert(administrator);
 		return "redirect:/";
 	}

@@ -87,6 +87,11 @@
                       >
                         メールアドレスを入力してください
                       </label>
+                      <label
+                        th:text="${notUniqueMail}"
+                        class="error-messages"
+                      >
+                      </label>
                       <input
                         type="text"
                         name="mailAddress"
