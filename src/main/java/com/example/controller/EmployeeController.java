@@ -1,7 +1,12 @@
 package com.example.controller;
 
 import java.util.List;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -13,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.example.domain.Employee;
+import com.example.form.InsertEmployeeForm;
 import com.example.form.SearchEmployeeForm;
 import com.example.form.UpdateEmployeeForm;
 import com.example.service.EmployeeService;
@@ -60,7 +66,7 @@ public class EmployeeController {
 	// ユースケース：従業員を従業員名で曖昧検索する
 	/////////////////////////////////////////////////////
 	/**
-	 * 従業員一覧画面を出力します.
+	 * 曖昧検索した従業員一覧画面を出力します.
 	 * 
 	 * @param model モデル
 	 * @return 従業員一覧画面
@@ -94,6 +100,74 @@ public class EmployeeController {
 		Employee employee = employeeService.showDetail(Integer.parseInt(id));
 		model.addAttribute("employee", employee);
 		return "employee/detail";
+	}
+
+	/////////////////////////////////////////////////////
+	// ユースケース：従業員登録画面を表示する
+	/////////////////////////////////////////////////////
+	/**
+	 * 従業員登録画面を出力します.
+	 * 
+	 * @param form 従業員新規登録用フォーム
+	 * @return 従業員登録画面
+	 */
+	@GetMapping("/toInsert")
+	public String toInsert(InsertEmployeeForm form, Model model) {
+		return "employee/insert";
+	}
+
+	/////////////////////////////////////////////////////
+	// ユースケース：従業員を新規登録する
+	/////////////////////////////////////////////////////
+	/**
+	 * 従業員を新規登録します.
+	 * 
+	 * @param form 従業員新規登録用フォーム
+	 * @return 従業員一覧画面へリダクレクト
+	 */
+	@PostMapping("/insert")
+	public synchronized String insert(
+		Model model,
+		@Validated InsertEmployeeForm form,
+		BindingResult bindingResult
+		) {
+		try {
+			if (bindingResult.hasErrors()) {
+				if (form.getImage().isEmpty()) {
+					model.addAttribute("nullImage", "画像が添付されていません");
+				}
+				return toInsert(form, model);
+			}
+			if (form.getImage().isEmpty()) {
+				model.addAttribute("nullImage", "画像が添付されていません");
+				return toInsert(form, model);
+			}
+			// 採番されている従業員IDの最大値＋１を取得
+			Integer id = employeeService.getMaxId() + 1;
+			
+			// 画像名の重複を防ぐため、従業員IDと同一になるようにリネーム
+			String OriginalfileName = form.getImage().getOriginalFilename();
+			String extension = OriginalfileName.replaceAll("^.*\\.(.*)$", "$1");
+			String imageName = id + "." + extension;
+
+			// 画像の保存処理
+			byte[] bytes = form.getImage().getBytes();
+			Path path = Paths.get("src/main/resources/static/img/" + imageName);
+			Files.write(path, bytes);
+
+			Employee employee = new Employee();
+			BeanUtils.copyProperties(form, employee);
+			employee.setId(id);
+			employee.setImage(imageName);
+			employee.setSalary(form.getIntSalary());
+			employee.setDependentsCount(form.getIntDependentsCount());
+			
+			employeeService.insert(employee);
+			return "redirect:/employee/showList";
+		} catch (IOException e) {
+			return "error/5xx";
+		}
+		
 	}
 
 	/////////////////////////////////////////////////////
