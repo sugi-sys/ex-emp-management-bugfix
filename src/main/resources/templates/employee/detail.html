@@ -132,7 +132,7 @@
                   <tr>
                     <th nowrap>入社日</th>
                     <td>
-                      <span th:utext="${employee.hireDate}">2012/11/29</span>
+                      <span th:utext="${#dates.format(employee.hireDate, 'yyyy年MM月dd日')}">2012/11/29</span>
                     </td>
                   </tr>
                   <tr>
