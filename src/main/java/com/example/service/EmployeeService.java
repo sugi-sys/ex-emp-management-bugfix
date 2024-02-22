@@ -44,6 +44,16 @@ public class EmployeeService {
 	}
 
 	/**
+	 * 従業員情報の内、採番されているIDの最大値を取得します.
+	 * 
+	 * @return 採番されているIDの最大値
+	 */
+	public Integer getMaxId() {
+		Integer maxId = employeeRepository.getMaxId();
+		return maxId;
+	}
+
+	/**
 	 * 従業員情報を取得します.
 	 * 
 	 * @param id ID
@@ -62,5 +72,14 @@ public class EmployeeService {
 	 */
 	public void update(Employee employee) {
 		employeeRepository.update(employee);
+	}
+
+	/**
+	 * 従業員情報を新規登録します.
+	 * 
+	 * @param employee 新規登録した従業員情報
+	 */
+	public void insert(Employee employee) {
+		employeeRepository.insert(employee);
 	}
 }

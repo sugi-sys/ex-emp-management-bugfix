@@ -1,6 +1,7 @@
 package com.example.repository;
 
 import java.util.List;
+import java.util.HashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
@@ -72,6 +73,17 @@ public class EmployeeRepository {
 	}
 
 	/**
+	 * 従業員一覧の内、採番されているIDの最大値を取得します.
+	 * 
+	 * @return 採番されているIDの最大値
+	 */
+	public Integer getMaxId() {
+		String sql = "SELECT MAX(id) FROM employees";
+		Integer maxId = template.queryForObject(sql, new HashMap<>(),Integer.class);
+		return maxId;
+	}
+
+	/**
 	 * 主キーから従業員情報を取得します.
 	 * 
 	 * @param id 検索したい従業員ID
@@ -96,5 +108,17 @@ public class EmployeeRepository {
 
 		String updateSql = "UPDATE employees SET dependents_count=:dependentsCount WHERE id=:id";
 		template.update(updateSql, param);
+	}
+
+	/**
+	 * 従業員情報を新規登録します.
+	 */
+	public void insert(Employee employee) {
+		SqlParameterSource param = new BeanPropertySqlParameterSource(employee);
+
+		String insertSql = "INSERT INTO employees"
+		+ " (id,name,image,gender,hire_date,mail_address,zip_code,address,telephone,salary,characteristics,dependents_count)"
+		+ " VALUES (:id,:name,:image,:gender,:hireDate,:mailAddress,:zipCode,:address,:telephone,:salary,:characteristics,:dependentsCount)";
+		template.update(insertSql, param);
 	}
 }
