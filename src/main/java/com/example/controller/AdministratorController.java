@@ -2,6 +2,7 @@ package com.example.controller;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -34,6 +35,9 @@ public class AdministratorController {
 
 	@Autowired
 	private HttpSession session;
+
+	@Autowired
+	private PasswordEncoder passwordEncoder;
 
 	/**
 	 * 使用するフォームオブジェクトをリクエストスコープに格納する.
@@ -79,17 +83,21 @@ public class AdministratorController {
 		if (bindingResult.hasErrors()) {
 			return toInsert(model, form);
 		}
-		Administrator administrator = new Administrator();
 		if (!(form.getPassword().equals(form.getPasswordConfirm()))) {
 			model.addAttribute("notConfirmPassword", "確認用パスワードが一致していません");
 			return toInsert(model, form);
 		}
-		// フォームからドメインにプロパティ値をコピー
-		BeanUtils.copyProperties(form, administrator);
-		if (administratorService.findByMailAddress(administrator.getMailAddress()) != null) {
+		if (administratorService.findByMailAddress(form.getMailAddress()) != null) {
 			model.addAttribute("notUniqueMail", "メールアドレスが重複しています");
 			return toInsert(model, form);
 		}
+
+		// フォームからドメインにプロパティ値をコピー
+		Administrator administrator = new Administrator();
+		String encodeedPassword = passwordEncoder.encode(form.getPassword());
+		BeanUtils.copyProperties(form, administrator);
+		administrator.setPassword(encodeedPassword);
+		
 		administratorService.insert(administrator);
 		return "redirect:/";
 	}
@@ -115,14 +123,20 @@ public class AdministratorController {
 	 */
 	@PostMapping("/login")
 	public String login(LoginForm form, RedirectAttributes redirectAttributes) {
-		Administrator administrator = administratorService.login(form.getMailAddress(), form.getPassword());
+		Administrator administrator = administratorService.findByMailAddress(form.getMailAddress());
 		if (administrator == null) {
 			redirectAttributes.addFlashAttribute("errorMessage", "メールアドレスまたはパスワードが不正です。");
 			return "redirect:/";
 		}
-		session.setAttribute("administratorName", administrator.getName());
-		return "redirect:/employee/showList";
+
+		if (passwordEncoder.matches(form.getPassword(), administrator.getPassword())) {
+			session.setAttribute("administratorName", administrator.getName());
+			return "redirect:/employee/showList";
+		}
+		redirectAttributes.addFlashAttribute("errorMessage", "メールアドレスまたはパスワードが不正です。");
+		return "redirect:/";
 	}
+	
 
 	/////////////////////////////////////////////////////
 	// ユースケース：ログアウトをする
