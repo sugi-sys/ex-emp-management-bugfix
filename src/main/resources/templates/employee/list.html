@@ -107,7 +107,7 @@
           <table class="table table-striped">
             <div class="well">
               <form
-              method="post"
+              method="get"
               action="list.html"
               th:action="@{/employee/search}"
               th:object="${searchEmployeeForm}"
@@ -131,6 +131,22 @@
             </div>
             <tr th:if="${nullList}">
               <div class="well"><span th:text="${nullList}"></span></div>
+            </tr>
+            <tr>
+              <div class="form-control">
+                <span>
+                  <span th:each="pageCount : ${pages}">
+                    <span th:if="${searchName}">
+                      <span th:if="${pageCount == page}"><span th:text="${pageCount}">1</span></span>
+                      <span th:unless="${pageCount == page}"><a th:text="${pageCount}" th:href="@{/employee/search?page=} + ${pageCount} + '&name=' + ${searchName}">2</a></span>
+                    </span>
+                    <span th:unless="${searchName}">
+                      <span th:if="${pageCount == page}"><span th:text="${pageCount}">1</span></span>
+                      <span th:unless="${pageCount == page}"><a th:text="${pageCount}" th:href="@{/employee/showList?page=} + ${pageCount}">2</a></span>
+                    </span>
+                  </span>
+                件数：<span th:text="${listSize} + ' 件'"></span>
+                </span>
             </tr>
             <thead>
               <tr>
