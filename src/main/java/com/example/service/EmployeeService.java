@@ -33,6 +33,16 @@ public class EmployeeService {
 	}
 
 	/**
+	 * 従業員情報を全件、名前のみ取得します.
+	 * 
+	 * @return 従業員情報一覧
+	 */
+	public List<Employee> collectName() {
+		List<Employee> employeeList = employeeRepository.findAllName();
+		return employeeList;
+	}
+
+	/**
 	 * 従業員情報を名前で検索して取得します.
 	 * 
 	 * @param name 検索したい従業員名

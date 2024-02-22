@@ -42,6 +42,12 @@ public class EmployeeRepository {
 		return employee;
 	};
 
+	private static final RowMapper<Employee> EMPLOYEE_ROW_MAPPER_FOR_NAME = (rs, i) -> {
+		Employee employee = new Employee();
+		employee.setName(rs.getString("name"));
+		return employee;
+	};
+
 	@Autowired
 	private NamedParameterJdbcTemplate template;
 
@@ -54,6 +60,18 @@ public class EmployeeRepository {
 		String sql = "SELECT id,name,image,gender,hire_date,mail_address,zip_code,address,telephone,salary,characteristics,dependents_count FROM employees ORDER BY hire_date";
 
 		List<Employee> developmentList = template.query(sql, EMPLOYEE_ROW_MAPPER);
+
+		return developmentList;
+	}
+
+	/**
+	 * 従業員一覧情報を名前のみ取得します.
+	 * 
+	 * @return 全従業員の名前一覧 従業員が存在しない場合はサイズ0件の従業員一覧を返します
+	 */
+	public List<Employee> findAllName() {
+		String sql = "SELECT name FROM employees";
+		List<Employee> developmentList = template.query(sql, EMPLOYEE_ROW_MAPPER_FOR_NAME);
 
 		return developmentList;
 	}

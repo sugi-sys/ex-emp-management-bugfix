@@ -1,6 +1,7 @@
 package com.example.controller;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.domain.Employee;
 import com.example.form.InsertEmployeeForm;
@@ -53,21 +55,38 @@ public class EmployeeController {
 	 * 従業員一覧画面を出力します.
 	 * 
 	 * @param model モデル
+	 * @param form 検索欄用のフォーム
+	 * @param page 表示ページ（リクエストされなければ1ページ目を表示する）
 	 * @return 従業員一覧画面
 	 */
 	@GetMapping("/showList")
-	public String showList(Model model, SearchEmployeeForm form) {
-		List<Employee> employeeList = employeeService.showList();
-		String[] nameList = new String[employeeList.size()];
+    public String showList(Model model, SearchEmployeeForm form, @RequestParam(required = false) String page) {
+		// ページをリクエストされなければ、1ページ目を表示
+		if (page == null) {
+			page = "1";
+		}
+		// ページ数に基づいてoffset値を変更
+        Integer offset = offsetGenerator(page);
+
+		// DBよりデータを全件取得
+        List<Employee> employeeAllList = employeeService.showList();
+		
+		// ページング
+		List<Employee> employeeList = paging(employeeAllList, offset);
 
 		// 取得したデータより、名前のみを抽出（Autocomplete用）
-		for (int i = 0; i < nameList.length; i++) {
-			nameList[i] = employeeList.get(i).getName();
-		}
-		model.addAttribute("employeeList", employeeList);
-		model.addAttribute("nameList", nameList);
-		return "employee/list";
-	}
+		String[] nameList = nameExtractor();
+
+		// 最大ページ数を計算
+		Integer[] pages = maxPageGenerator(employeeAllList);
+
+		// リクエストスコープに格納
+		model = modelAdder(model, employeeAllList, employeeList, nameList, page, pages);
+        
+        return "employee/list";
+    }
+
+	
 
 	/////////////////////////////////////////////////////
 	// ユースケース：従業員を従業員名で曖昧検索する
@@ -78,17 +97,31 @@ public class EmployeeController {
 	 * @param model モデル
 	 * @return 従業員一覧画面
 	 */
-	@PostMapping("/search")
-	public String search(Model model, SearchEmployeeForm form) {
+	@GetMapping("/search")
+	public String search(Model model, SearchEmployeeForm form, @RequestParam(required = false) String page) {
+		if (page == null) {
+			page = "1";
+		}
+		// 検索欄が空欄なら
 		if ("".equals(form.getName())) {
-			return showList(model, form);
+			return "redirect:/employee/showList";
 		}
-		List<Employee> employeeList = employeeService.search(form.getName());
-		if (employeeList.size() == 0) {
+
+		Integer offset = offsetGenerator(page);
+		List<Employee> employeeAllList = employeeService.search(form.getName());
+
+		// 検索にヒットしなかったら
+		if (employeeAllList.size() == 0) {
 			model.addAttribute("nullList", "１件もありませんでした");
-			return showList(model, form);
+			return showList(model, form, "1");
 		}
-		model.addAttribute("employeeList", employeeList);
+
+		List<Employee> employeeList = paging(employeeAllList, offset);
+		String[] nameList = nameExtractor();
+		Integer[] pages = maxPageGenerator(employeeAllList);
+		model = modelAdder(model, employeeAllList, employeeList, nameList, page, pages);
+		model.addAttribute("searchName", form.getName());
+
 		return "employee/list";
 	}
 
@@ -197,4 +230,79 @@ public class EmployeeController {
 		employeeService.update(employee);
 		return "redirect:/employee/showList";
 	}
+
+	/**
+	 * 取得したリストをページングします.
+	 * 
+	 * @return ページングされた従業員リスト
+	 */
+	private List<Employee> paging(List<Employee> employeeAllList, Integer offset) {
+		List<Employee> employeeList = new ArrayList<>();
+		for (int i = offset; i < offset + 10; i++) {
+			try {
+				employeeList.add(employeeAllList.get(i));
+			} catch (IndexOutOfBoundsException e) {
+				return employeeList;
+			}
+		}
+		return employeeList;
+	}
+
+	/**
+	 * 全従業員の名前を取得します.
+	 * 
+	 * @return 全従業員の名前が入った配列
+	 */
+	private String[] nameExtractor() {
+		List<Employee> employeeListForName = employeeService.collectName();
+		String[] nameList = new String[employeeListForName.size()];
+		for (int i = 0; i < nameList.length; i++) {
+			nameList[i] = employeeListForName.get(i).getName();
+		}
+		return nameList;
+	}
+
+	/**
+	 * リクエストされたページ数から適切なOFFSET値を返します.
+	 * 
+	 * @param page リクエストされたページ数
+	 * @return OFFSET値
+	 */
+	private Integer offsetGenerator(String page) {
+		return (Integer.parseInt(page) * 10) - 10;
+	}
+
+	/**
+	 * 取得したリストから最大のページ数を返します.
+	 * 
+	 * @param employeeAllList 取得した従業員全件リスト
+	 * @return 最大ページ数
+	 */
+	private Integer[] maxPageGenerator(List<Employee> employeeAllList) {
+		int max = (int)Math.ceil(employeeAllList.size() / 10.0);
+		Integer[] pages = new Integer[max];
+		for (int i = 0; i < max; i++) {
+			pages[i] = i + 1;
+		}
+		return pages;
+	}
+
+	/**
+	 * データ群をリクエストスコープに格納します.
+	 * 
+	 * @param model リクエストスコープ引継用
+	 * @param employeeList 取得した従業員リスト
+	 * @param nameList 全従業員の名前が入った配列
+	 * @param pageInfo Mapに格納されたページ情報
+	 */
+	private Model modelAdder(Model model, List<Employee> employeeAllList, List<Employee> employeeList, String[] nameList, String page, Integer[] pages) {
+		model.addAttribute("employeeList", employeeList);
+		model.addAttribute("listSize", employeeAllList.size());
+        model.addAttribute("nameList", nameList);
+		model.addAttribute("page", Integer.parseInt(page));
+		model.addAttribute("pages", pages);
+		return model;
+	}
+	
+
 }
