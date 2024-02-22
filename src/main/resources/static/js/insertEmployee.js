@@ -1,5 +1,5 @@
 'use strict';
-$(function () {
+$(function() {
     const url = 'https://zipcoda.net/api';
 
     $('#zip-code').on('input', () => {
@@ -19,5 +19,5 @@ $(function () {
 
             });
         }
-    })
-})
+    });
+});

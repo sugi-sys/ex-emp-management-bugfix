@@ -76,10 +76,11 @@ public class EmployeeService {
 
 	/**
 	 * 従業員情報を新規登録します.
+	 * synchronized修飾子をもちます
 	 * 
 	 * @param employee 新規登録した従業員情報
 	 */
-	public void insert(Employee employee) {
+	public synchronized void insert(Employee employee) {
 		employeeRepository.insert(employee);
 	}
 }
