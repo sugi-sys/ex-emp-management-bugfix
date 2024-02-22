@@ -58,7 +58,14 @@ public class EmployeeController {
 	@GetMapping("/showList")
 	public String showList(Model model, SearchEmployeeForm form) {
 		List<Employee> employeeList = employeeService.showList();
+		String[] nameList = new String[employeeList.size()];
+
+		// 取得したデータより、名前のみを抽出（Autocomplete用）
+		for (int i = 0; i < nameList.length; i++) {
+			nameList[i] = employeeList.get(i).getName();
+		}
 		model.addAttribute("employeeList", employeeList);
+		model.addAttribute("nameList", nameList);
 		return "employee/list";
 	}
 
@@ -126,7 +133,7 @@ public class EmployeeController {
 	 * @return 従業員一覧画面へリダクレクト
 	 */
 	@PostMapping("/insert")
-	public synchronized String insert(
+	public String insert(
 		Model model,
 		@Validated InsertEmployeeForm form,
 		BindingResult bindingResult
